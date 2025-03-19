@@ -38,7 +38,7 @@ function Header() {
   };
 
   return (
-    <AppBar position="static">
+    <AppBar position="static" sx={{background: "white"}}>
       <Container maxWidth="xl"
       sx={
         {
