@@ -1,6 +1,8 @@
-// literary-lens/src/App.jsx
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import * as React from 'react';
+import Button from '@mui/material/Button';
+import Header from './components/header';
 
 // Import pages
 import Home from './pages/Home';
@@ -27,19 +29,26 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
-        <Route 
-          path="/dashboard" 
-          element={isAuthenticated ? <Dashboard setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
-        />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Router>
+    <>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
+          <Route 
+            path="/dashboard" 
+            element={isAuthenticated ? <Dashboard setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
+          />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Router>
+      <div className="App">
+        <Header />
+        <h1>Literary Lens</h1>
+        <Button variant="contained">Material UI connected</Button>
+      </div>
+    </>
   );
 }
- 
+
 export default App;
