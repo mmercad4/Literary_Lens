@@ -1,9 +1,22 @@
 // literary-lens/src/pages/Dashboard.jsx
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
 
 const Dashboard = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
+
+    // Check if user is authenticated on component mount
+    useEffect(() => {
+      const token = localStorage.getItem('token');
+      
+      // If no token, redirect to login
+      if (!token) {
+        navigate('/login');
+      } else {
+        setIsAuthenticated(true);  // If there is a token, set authentication state
+      }
+    }, [navigate, setIsAuthenticated]);
   
   const handleLogout = () => {
     localStorage.removeItem('token');

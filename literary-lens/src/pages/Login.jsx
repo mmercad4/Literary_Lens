@@ -1,6 +1,7 @@
 // literary-lens/src/pages/Login.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import '../styles/Auth.css';
 
 const Login = ({ setIsAuthenticated }) => {
@@ -21,23 +22,44 @@ const Login = ({ setIsAuthenticated }) => {
     });
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Simple validation
     const newErrors = {};
     if (!formData.email) newErrors.email = 'Email is required';
     if (!formData.password) newErrors.password = 'Password is required';
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
-    // Mock successful login
-    console.log('Login form submitted:', formData);
-    setIsAuthenticated(true);
-    navigate('/dashboard');
+
+    try {
+      console.log(formData.email)
+      console.log(formData.password)
+
+      // Make the API call to login endpoint
+      const response = await axios.post(
+        'http://localhost:8080/api/users/login',
+        {
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json', // Ensure JSON format
+          },
+        }
+      );
+
+      // On successful login, store the token in localStorage
+      localStorage.setItem('token', response.data.token);
+      setIsAuthenticated(true); // Update authentication state
+      navigate('/dashboard'); // Redirect to dashboard
+    } catch (error) {
+      setErrors({ general: 'Invalid email or password' });
+    }
   };
   
   return (
