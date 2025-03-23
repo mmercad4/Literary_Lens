@@ -1,6 +1,7 @@
 // literary-lens/src/pages/Register.jsx
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import '../styles/Auth.css';
 
 const Register = () => {
@@ -14,6 +15,9 @@ const Register = () => {
   });
   
   const [errors, setErrors] = useState({});
+  const [message, setMessage] = useState('');
+
+  const navigate = useNavigate();
   
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -58,28 +62,43 @@ const Register = () => {
     return newErrors;
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-    
-    // Handle form submission here (API call to register user)
-    console.log('Form submitted:', formData);
-    
-    // Reset form after successful submission
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      agreeToTerms: false
-    });
-    setErrors({});
+
+    // API call to register the user
+    try {
+      const response = await axios.post('http://localhost:8080/api/users/register', {
+        username: formData.firstName + ' ' + formData.lastName,  // Combining first and last name as the username
+        email: formData.email,
+        password: formData.password
+      });
+
+      setMessage(response.data.message); // Show success message from backend
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        agreeToTerms: false
+      });
+      setErrors({});
+      navigate('/login'); // Redirect to login page after successful registration
+
+    } catch (error) {
+      // Handling error from the backend
+      if (error.response && error.response.data) {
+        setMessage(error.response.data.message); // Show error message from backend
+      } else {
+        setMessage('Something went wrong. Please try again later.');
+      }
+    }
   };
 
   return (
