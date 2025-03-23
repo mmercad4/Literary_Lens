@@ -1,6 +1,7 @@
 // import modules
 const express = require('express');
 const mongoose = require('mongoose');
+const bodyParser = require('body-parser')
 const morgan = require('morgan');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes')
@@ -16,6 +17,7 @@ mongoose
   .catch((err) => console.log('DB CONNECTION ERROR', err));
 
 // middleware
+app.use(bodyParser.json());
 app.use(morgan('dev'));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json())
