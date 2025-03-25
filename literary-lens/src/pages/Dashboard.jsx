@@ -33,10 +33,10 @@ const Dashboard = ({ setIsAuthenticated }) => {
         </div>
         
         <nav className="dashboard-nav">
-          <button className="nav-item active">Library</button>
-          <button className="nav-item">Create New</button>
-          <button className="nav-item">Collections</button>
-          <button className="nav-item">Settings</button>
+          <button className="nav-item active">Dashboard</button>
+          <button className="nav-item" onClick={() => navigate('/generate')}>Generate</button>
+          <button className="nav-item" onClick={() => navigate('/library')}>Library</button>
+          <button className="nav-item" onClick={() => navigate('/settings')}>Settings</button>
         </nav>
         
         <div className="user-menu">
@@ -74,7 +74,7 @@ const Dashboard = ({ setIsAuthenticated }) => {
           <div className="create-icon">🎨</div>
           <h3>Create your first visualization</h3>
           <p>Start by generating an image from your favorite book passage</p>
-          <button className="create-button">Get Started</button>
+          <button className="create-button" onClick={() => navigate('/generate')}>Get Started</button>
         </div>
       </main>
     </div>
