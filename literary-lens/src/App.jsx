@@ -9,6 +9,9 @@ import Home from './pages/Home';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Generate from './pages/Generate';
+import Library from './pages/Library';
+import Settings from './pages/Settings';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,6 +43,18 @@ function App() {
             element={isAuthenticated ? 
               <Dashboard setIsAuthenticated={setIsAuthenticated} /> : 
               <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/generate" 
+            element={isAuthenticated ? <Generate /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/library" 
+            element={isAuthenticated ? <Library /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/settings" 
+            element={isAuthenticated ? <Settings /> : <Navigate to="/login" />} 
           />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
