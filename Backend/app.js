@@ -5,6 +5,7 @@ const bodyParser = require('body-parser')
 const morgan = require('morgan');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes')
+const imageRoutes = require('./routes/imageRoutes');
 require('dotenv').config();
 
 // app
@@ -26,6 +27,7 @@ app.use(express.json())
 const testRoutes = require('./routes/test');
 app.use('/', testRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/image', imageRoutes);
 
 // port
 const port = process.env.PORT || 8080;
