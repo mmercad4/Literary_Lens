@@ -5,6 +5,10 @@ import '../styles/Library.css';
 
 const Library = () => {
   const navigate = useNavigate();
+
+  //Actually get the generated images from the backend
+  // Array of objects representing the library items
+  
   
   // Mock data for library items
   const [libraryItems, setLibraryItems] = useState([
