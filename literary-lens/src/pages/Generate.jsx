@@ -1,6 +1,7 @@
 // literary-lens/src/pages/Generate.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import '../styles/Generate.css';
 
 const Generate = () => {
@@ -39,7 +40,39 @@ const Generate = () => {
     }, 2000);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    try {
+      const imageElement = document.getElementById('image-save');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = imageElement.width;
+      canvas.height = imageElement.height;
+      ctx.drawImage(imageElement, 0, 0);
+      const dataURL = canvas.toDataURL('image/png');
+
+      // Get the token from local storage
+      const token = localStorage.getItem('token');
+
+      // Example: axios.post('/api/save-image', { image: dataURL })
+      // Make the API call to login endpoint
+      const response = await axios.post(
+        'http://localhost:8080/api/image/save',
+        {
+          image: dataURL,
+          description: "0",
+          bookTitle: "0",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(response.data);
+    } catch (error) {
+      console.error('Error saving image:', error);
+      alert('Failed to save image. Please try again.');
+    }
     alert('Image saved to your library!');
     navigate('/library');
   };
@@ -180,6 +213,7 @@ const Generate = () => {
                     <div className="placeholder-image">
                       <span className="placeholder-icon">🖼️</span>
                       <span className="placeholder-text">Generated Image</span>
+                      <img src="./logo192.png" id="image-save" alt="placeholder"></img>
                     </div>
                   </div>
                   <div className="image-actions">
