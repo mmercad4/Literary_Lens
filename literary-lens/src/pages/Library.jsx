@@ -171,6 +171,20 @@ const Library = () => {
 
   const handleBackendDelete = async (obj_id) => {
     console.log("Item to delete on backend: ", obj_id);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'http://localhost:8080/api/image/delete-image',
+        { imageId: obj_id },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    } catch (error) {
+      console.error('Error deleting item from backend:', error);
+    }
   }
 
   const handleCreateCollection = () => {
