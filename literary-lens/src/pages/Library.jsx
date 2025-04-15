@@ -4,53 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/Library.css';
 import axios from 'axios';
 
-let hasFetchedLibrary = false;
+
 const Library = () => {
   const navigate = useNavigate();
 
   //Actually get the generated images from the backend
   // Array of objects representing the library items
-  const getLibraryItems = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        'http://localhost:8080/api/image/get-library',
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      return await response.data;
-    } catch (error) {
-      console.error('Error fetching library items:', error);
-      return [];
-    }
-  }
-  if (!hasFetchedLibrary) {
-    hasFetchedLibrary = true;
   
-    getLibraryItems().then((library) => {
-      console.log(library);
-      const libraryItems = library.map((item, index) => {
-        let newItem = {
-          id: "img-" + index,
-          title: item.bookTitle,
-          preview: "null",
-          image: item.data,
-          text: item.description,
-          style: "null",
-          createdAt: item.createdAt,
-          collection: item.bookTitle,
-          obj_id: item._id,
-        };
-        return newItem;
-      });
-      setLibraryItems(libraryItems);
-    });
-  }
-  
+  // State to make sure to render actual data and not place holder
+  const [hasFetchedLibrary, setHasFetchedLibrary] = useState(false); // Use state for the flag
+
   // Mock data for library items
   const [libraryItems, setLibraryItems] = useState([
     {
@@ -99,10 +62,55 @@ const Library = () => {
     }
   ]);
 
+
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
   const [sortOrder, setSortOrder] = useState('newest');
+
+
+  // Code for getting library from backend
+  const getLibraryItems = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        'http://localhost:8080/api/image/get-library',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return await response.data;
+    } catch (error) {
+      console.error('Error fetching library items:', error);
+      return [];
+    }
+  }
+  if (!hasFetchedLibrary) {
+    setHasFetchedLibrary(true); // Set the flag to true after fetching
+  
+    getLibraryItems().then((library) => {
+      console.log(library);
+      const libraryItems = library.map((item, index) => {
+        let newItem = {
+          id: "img-" + index,
+          title: item.bookTitle,
+          preview: "null",
+          image: item.data,
+          text: item.description,
+          style: "null",
+          createdAt: item.createdAt,
+          collection: item.bookTitle,
+          obj_id: item._id,
+        };
+        return newItem;
+      });
+      console.log("state gonna change");
+      setLibraryItems(libraryItems);
+    });
+  }
 
   // Filter and sort library items
   const filteredItems = libraryItems.filter(item => {
