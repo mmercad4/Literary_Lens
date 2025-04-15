@@ -22,7 +22,7 @@ router.post('/save', authenticate, async (req, res) => {
             description: description,
             bookTitle: bookTitle,
             generatedBy: req.user.userId, // Use the user ID from the authenticated user
-            collection: "none",
+            collection: "Uncategorized",
             style: style,
         });
     
@@ -71,7 +71,6 @@ router.post("/update-collection", authenticate, async (req, res) => {
     console.log("Image collection update route hit!");
     try {
         const { imageId, collection } = req.body; // Extract image ID and collection from request body
-
         if (!imageId || !collection) {
             return res.status(400).json({ message: 'No image ID or collection provided.' });
         }
