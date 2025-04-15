@@ -52,6 +52,7 @@ const Generate = () => {
 
       // Get the token from local storage
       const token = localStorage.getItem('token');
+      let imageStyle
 
       // Example: axios.post('/api/save-image', { image: dataURL })
       // Make the API call to login endpoint
@@ -59,8 +60,9 @@ const Generate = () => {
         'http://localhost:8080/api/image/save',
         {
           image: dataURL,
-          description: "0",
+          description: generatedImage.text,
           bookTitle: "0",
+          style: generatedImage.style,
         },
         {
           headers: {

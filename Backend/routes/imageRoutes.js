@@ -10,9 +10,7 @@ router.post('/save', authenticate, async (req, res) => {
     console.log("Image save route hit!");
 
     try {
-        const { image, description, bookTitle} = req.body; // Extract data from request body
-        console.log(description)
-        console.log(bookTitle);
+        const { image, description, bookTitle, style} = req.body; // Extract data from request body
 
         if (!image) {
             return res.status(400).json({ message: 'No image data provided.' });
@@ -24,6 +22,8 @@ router.post('/save', authenticate, async (req, res) => {
             description: description,
             bookTitle: bookTitle,
             generatedBy: req.user.userId, // Use the user ID from the authenticated user
+            collection: "none",
+            style: style,
         });
     
         // Save the image to the database
@@ -45,6 +45,25 @@ router.post("/get-library", authenticate, async (req, res) => {
     } catch (error) {
         console.error('Error fetching images:', error);
         res.status(500).json({ message: 'Failed to fetch images' });
+    }
+});
+
+router.post("/delete-image", authenticate, async (req, res) => {
+    console.log("Image delete route hit!");
+    try {
+        const { imageId } = req.body; // Extract image ID from request body
+
+        if (!imageId) {
+            return res.status(400).json({ message: 'No image ID provided.' });
+        }
+
+        // Delete the image from the database
+        await Image.findByIdAndDelete(imageId);
+
+        res.status(200).json({ message: 'Image deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting image:', error);
+        res.status(500).json({ message: 'Failed to delete image' });
     }
 });
 
