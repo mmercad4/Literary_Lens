@@ -100,9 +100,9 @@ const Library = () => {
           preview: "null",
           image: item.data,
           text: item.description,
-          style: "null",
+          style: item.style,
           createdAt: item.createdAt,
-          collection: item.bookTitle,
+          collection: item.collection,
           obj_id: item._id,
         };
         return newItem;
@@ -161,12 +161,16 @@ const Library = () => {
     
     if (window.confirm(`Are you sure you want to delete ${selectedItems.length} item(s)?`)) {
       setLibraryItems(libraryItems.filter(item => !selectedItems.includes(item.id)));
+      selectedItems.forEach(itemId => {
+        const itemToDelete = libraryItems.find(item => item.id === itemId);
+        handleBackendDelete(itemToDelete.obj_id);
+      });
       setSelectedItems([]);
     }
   };
 
   const handleBackendDelete = async (obj_id) => {
-
+    console.log("Item to delete on backend: ", obj_id);
   }
 
   const handleCreateCollection = () => {
@@ -378,7 +382,7 @@ const Library = () => {
                     onClick={() => {
                       if (window.confirm('Are you sure you want to delete this item?')) {
                         setLibraryItems(libraryItems.filter(i => i.id !== item.id));
-                        handleBackendDelete(item.obj_Id);
+                        handleBackendDelete(item.obj_id);
                       }
                     }}
                   >
