@@ -2,13 +2,54 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Library.css';
+import axios from 'axios';
 
+let hasFetchedLibrary = false;
 const Library = () => {
   const navigate = useNavigate();
 
   //Actually get the generated images from the backend
   // Array of objects representing the library items
+  const getLibraryItems = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        'http://localhost:8080/api/image/get-library',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return await response.data;
+    } catch (error) {
+      console.error('Error fetching library items:', error);
+      return [];
+    }
+  }
+  if (!hasFetchedLibrary) {
+    hasFetchedLibrary = true;
   
+    getLibraryItems().then((library) => {
+      console.log(library);
+      const libraryItems = library.map((item, index) => {
+        let newItem = {
+          id: "img-" + index,
+          title: item.bookTitle,
+          preview: "null",
+          image: item.data,
+          text: item.description,
+          style: "null",
+          createdAt: item.createdAt,
+          collection: item.bookTitle,
+          obj_id: item._id,
+        };
+        return newItem;
+      });
+      setLibraryItems(libraryItems);
+    });
+  }
   
   // Mock data for library items
   const [libraryItems, setLibraryItems] = useState([
@@ -16,28 +57,45 @@ const Library = () => {
       id: 'img-1',
       title: 'Emerald City Gates',
       preview: '🏙️',
+      image: "null",
       text: 'The Emerald City glowed with a strange green light as Dorothy approached the magnificent gates...',
       style: 'fantasy',
       createdAt: '2023-12-10T14:30:00Z',
-      collection: 'Wizard of Oz'
+      collection: 'Wizard of Oz',
+      obj_id: null,
     },
     {
       id: 'img-2',
       title: 'Ahab on Deck',
       preview: '⛵',
+      image: "null",
       text: 'Captain Ahab stood on the deck, his eyes fixed on the horizon, searching for the white whale...',
       style: 'realistic',
       createdAt: '2023-12-15T09:45:00Z',
-      collection: 'Moby Dick'
+      collection: 'Moby Dick',
+      obj_id: null,
     },
     {
       id: 'img-3',
       title: 'Gatsby\'s Mansion',
       preview: '🏛️',
+      image: "null",
       text: 'The lights of Gatsby\'s mansion blazed with extraordinary brightness, casting golden reflections across the bay...',
       style: 'watercolor',
       createdAt: '2023-12-20T16:15:00Z',
-      collection: 'The Great Gatsby'
+      collection: 'The Great Gatsby',
+      obj_id: null,
+    },
+    {
+      id: "null",
+      title: "null",
+      preview: "null",
+      image: "null",
+      text: "null",
+      style: "null",
+      createdAt: "null",
+      collection: "null",
+      obj_id: null,
     }
   ]);
 
@@ -98,6 +156,10 @@ const Library = () => {
       setSelectedItems([]);
     }
   };
+
+  const handleBackendDelete = async (obj_id) => {
+
+  }
 
   const handleCreateCollection = () => {
     if (selectedItems.length === 0) {
@@ -275,7 +337,12 @@ const Library = () => {
                 </div>
                 
                 <div className="item-preview">
-                  <span className="preview-icon">{item.preview}</span>
+                  {item.image !== "null" && (
+                    <img width="40px" src={item.image} alt={item.title} className="preview-image" />
+                  )}
+                  {item.preview !== "null" && (
+                    <span className="preview-icon">{item.preview}</span>
+                  )}
                 </div>
                 
                 <div className="item-details">
@@ -303,6 +370,7 @@ const Library = () => {
                     onClick={() => {
                       if (window.confirm('Are you sure you want to delete this item?')) {
                         setLibraryItems(libraryItems.filter(i => i.id !== item.id));
+                        handleBackendDelete(item.obj_Id);
                       }
                     }}
                   >

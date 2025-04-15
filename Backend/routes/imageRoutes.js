@@ -37,5 +37,16 @@ router.post('/save', authenticate, async (req, res) => {
 
 });
 
+router.post("/get-library", authenticate, async (req, res) => {
+    console.log("Image library route hit!");
+    try {
+        const images = await Image.find({ generatedBy: req.user.userId });
+        res.status(200).json(images);
+    } catch (error) {
+        console.error('Error fetching images:', error);
+        res.status(500).json({ message: 'Failed to fetch images' });
+    }
+});
+
 
 module.exports = router;
