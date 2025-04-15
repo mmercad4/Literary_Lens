@@ -102,7 +102,7 @@ const Library = () => {
           text: item.description,
           style: item.style,
           createdAt: item.createdAt,
-          collection: item.collection,
+          collection: item.collection == "Uncategorized" ? null : item.collection,
           obj_id: item._id,
         };
         return newItem;
@@ -195,6 +195,16 @@ const Library = () => {
     
     const collectionName = prompt('Enter a name for your new collection:');
     if (collectionName) {
+      selectedItems.forEach(itemId => {
+        let itemToUpdate = libraryItems.find(item => item.id === itemId);
+        if (itemToUpdate) {
+          handleBackendUpdateCollection(itemToUpdate.obj_id, collectionName);
+        }
+      });
+
+      if (collectionName === 'Uncategorized') {
+        collectionName = null; // Set to null if 'Uncategorized' is selected
+      }
       const updatedItems = libraryItems.map(item => {
         if (selectedItems.includes(item.id)) {
           return { ...item, collection: collectionName };
@@ -207,6 +217,24 @@ const Library = () => {
     }
   };
 
+  const handleBackendUpdateCollection = async (obj_id, collection) => {
+    if (collection && obj_id) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(
+          'http://localhost:8080/api/image/update-collection',
+          { imageId: obj_id, collection: collection },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      } catch (error) {
+        console.error('Error updating book title:', error);
+      }
+    }
+  };
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
