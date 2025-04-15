@@ -67,7 +67,43 @@ router.post("/delete-image", authenticate, async (req, res) => {
     }
 });
 
+router.post("/update-collection", authenticate, async (req, res) => {
+    console.log("Image collection update route hit!");
+    try {
+        const { imageId, collection } = req.body; // Extract image ID and collection from request body
 
+        if (!imageId || !collection) {
+            return res.status(400).json({ message: 'No image ID or collection provided.' });
+        }
+
+        // Update the image's collection in the database
+        await Image.findByIdAndUpdate(imageId, { collection: collection });
+
+        res.status(200).json({ message: 'Image collection updated successfully' });
+    } catch (error) {
+        console.error('Error updating image collection:', error);
+        res.status(500).json({ message: 'Failed to update image collection' });
+    }
+});
+
+router.post("/update-book-title", authenticate, async (req, res) => {
+    console.log("Image book title update route hit!");
+    try {
+        const { imageId, bookTitle } = req.body; // Extract image ID and book title from request body
+
+        if (!imageId || !bookTitle) {
+            return res.status(400).json({ message: 'No image ID or book title provided.' });
+        }
+
+        // Update the image's book title in the database
+        await Image.findByIdAndUpdate(imageId, { bookTitle: bookTitle });
+
+        res.status(200).json({ message: 'Image book title updated successfully' });
+    } catch (error) {
+        console.error('Error updating image book title:', error);
+        res.status(500).json({ message: 'Failed to update image book title' });
+    }
+});
 
 
 module.exports = router;

@@ -212,6 +212,28 @@ const Library = () => {
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
+  const handleEdit = async (obj_id) => {
+    // This function will handle the edit action for an item, letting user change the book title
+    const newTitle = prompt('Enter new title:');
+    if (newTitle) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(
+          'http://localhost:8080/api/image/update-book-title',
+          { imageId: obj_id, bookTitle: newTitle },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setLibraryItems(libraryItems.map(item => item.obj_id === obj_id ? { ...item, title: newTitle } : item));
+      } catch (error) {
+        console.error('Error updating book title:', error);
+      }
+    }
+  }
+
   return (
     <div className="library-container">
       <header className="library-header">
@@ -390,7 +412,7 @@ const Library = () => {
                 
                 <div className="item-actions">
                   <button className="item-action-button">View</button>
-                  <button className="item-action-button">Edit</button>
+                  <button className="item-action-button" onClick={() => {handleEdit(item.obj_id)}}>Edit</button>
                   <button 
                     className="item-action-button danger"
                     onClick={() => {
