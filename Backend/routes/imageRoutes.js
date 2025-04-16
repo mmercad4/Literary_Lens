@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const Image = require('../models/image'); // Import the Image model
 const router = express.Router();
 const authenticate = require('../middleware/auth.js');
+const checkOwnership = require('../middleware/ownership.js');
 
 // Post route for image saving
 router.post('/save', authenticate, async (req, res) => {
@@ -48,7 +49,7 @@ router.post("/get-library", authenticate, async (req, res) => {
     }
 });
 
-router.post("/delete-image", authenticate, async (req, res) => {
+router.post("/delete-image", authenticate, checkOwnership, async (req, res) => {
     console.log("Image delete route hit!");
     try {
         const { imageId } = req.body; // Extract image ID from request body
@@ -67,7 +68,7 @@ router.post("/delete-image", authenticate, async (req, res) => {
     }
 });
 
-router.post("/update-collection", authenticate, async (req, res) => {
+router.post("/update-collection", authenticate, checkOwnership, async (req, res) => {
     console.log("Image collection update route hit!");
     try {
         const { imageId, collection } = req.body; // Extract image ID and collection from request body
@@ -85,7 +86,7 @@ router.post("/update-collection", authenticate, async (req, res) => {
     }
 });
 
-router.post("/update-book-title", authenticate, async (req, res) => {
+router.post("/update-book-title", authenticate, checkOwnership, async (req, res) => {
     console.log("Image book title update route hit!");
     try {
         const { imageId, bookTitle } = req.body; // Extract image ID and book title from request body
@@ -104,7 +105,7 @@ router.post("/update-book-title", authenticate, async (req, res) => {
     }
 });
 
-router.post("/update-public", authenticate, async (req, res) => {
+router.post("/update-public", authenticate, checkOwnership, async (req, res) => {
     console.log("Image public update route hit!");
     try {
         const { imageId, publicStatus } = req.body; // Extract image ID and public status from request body
