@@ -8,6 +8,8 @@ const imageSchema = new mongoose.Schema({
   generatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },  // User who generated the image
   public: { type: Boolean, default: false },  // If the image is public
   createdAt: { type: Date, default: Date.now },
+  collection: { type: String, required: true },  // Collection name
+  style: { type: String, required: true },  // Style of the image
 });
 
 const Image = mongoose.model('Image', imageSchema);
