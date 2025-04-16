@@ -104,5 +104,35 @@ router.post("/update-book-title", authenticate, async (req, res) => {
     }
 });
 
+router.post("/update-public", authenticate, async (req, res) => {
+    console.log("Image public update route hit!");
+    try {
+        const { imageId, publicStatus } = req.body; // Extract image ID and public status from request body
+
+        if (!imageId || publicStatus === undefined) {
+            return res.status(400).json({ message: 'No image ID or public status provided.' });
+        }
+
+        // Update the image's public status in the database
+        await Image.findByIdAndUpdate(imageId, { public: publicStatus });
+
+        res.status(200).json({ message: 'Image public status updated successfully' });
+    } catch (error) {
+        console.error('Error updating image public status:', error);
+        res.status(500).json({ message: 'Failed to update image public status' });
+    }
+});
+
+router.post("/get-public-images-search", authenticate, async (req, res) => {
+    console.log("Public image library route hit!");
+    const { searchTerm } = req.body; // Extract search term from request body
+    try {
+        const images = await Image.find({ public: true, collection: { $regex: searchTerm, $options: 'i' } });
+        res.status(200).json(images);
+    } catch (error) {
+        console.error('Error fetching public images:', error);
+        res.status(500).json({ message: 'Failed to fetch public images' });
+    }
+});
 
 module.exports = router;
