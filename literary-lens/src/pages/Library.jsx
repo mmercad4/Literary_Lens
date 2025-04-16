@@ -102,7 +102,7 @@ const Library = () => {
           text: item.description,
           style: item.style,
           createdAt: item.createdAt,
-          collection: item.collection == "Uncategorized" ? null : item.collection,
+          collection: item.collection === "Uncategorized" ? null : item.collection,
           obj_id: item._id,
         };
         return newItem;
@@ -193,7 +193,7 @@ const Library = () => {
       return;
     }
     
-    const collectionName = prompt('Enter a name for your new collection:');
+    let collectionName = prompt('Enter a name for your new collection:');
     if (collectionName) {
       selectedItems.forEach(itemId => {
         let itemToUpdate = libraryItems.find(item => item.id === itemId);
