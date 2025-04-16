@@ -52,7 +52,6 @@ const Generate = () => {
 
       // Get the token from local storage
       const token = localStorage.getItem('token');
-      let imageStyle
 
       // Example: axios.post('/api/save-image', { image: dataURL })
       // Make the API call to login endpoint
