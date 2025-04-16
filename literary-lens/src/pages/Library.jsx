@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Library.css';
+import axios from 'axios';
+
 
 const Library = () => {
   const navigate = useNavigate();
@@ -9,42 +11,106 @@ const Library = () => {
   //Actually get the generated images from the backend
   // Array of objects representing the library items
   
-  
+  // State to make sure to render actual data and not place holder
+  const [hasFetchedLibrary, setHasFetchedLibrary] = useState(false); // Use state for the flag
+
   // Mock data for library items
   const [libraryItems, setLibraryItems] = useState([
     {
       id: 'img-1',
       title: 'Emerald City Gates',
       preview: '🏙️',
+      image: "null",
       text: 'The Emerald City glowed with a strange green light as Dorothy approached the magnificent gates...',
       style: 'fantasy',
       createdAt: '2023-12-10T14:30:00Z',
-      collection: 'Wizard of Oz'
+      collection: 'Wizard of Oz',
+      obj_id: null,
     },
     {
       id: 'img-2',
       title: 'Ahab on Deck',
       preview: '⛵',
+      image: "null",
       text: 'Captain Ahab stood on the deck, his eyes fixed on the horizon, searching for the white whale...',
       style: 'realistic',
       createdAt: '2023-12-15T09:45:00Z',
-      collection: 'Moby Dick'
+      collection: 'Moby Dick',
+      obj_id: null,
     },
     {
       id: 'img-3',
       title: 'Gatsby\'s Mansion',
       preview: '🏛️',
+      image: "null",
       text: 'The lights of Gatsby\'s mansion blazed with extraordinary brightness, casting golden reflections across the bay...',
       style: 'watercolor',
       createdAt: '2023-12-20T16:15:00Z',
-      collection: 'The Great Gatsby'
+      collection: 'The Great Gatsby',
+      obj_id: null,
+    },
+    {
+      id: "null",
+      title: "null",
+      preview: "null",
+      image: "null",
+      text: "null",
+      style: "null",
+      createdAt: "null",
+      collection: "null",
+      obj_id: null,
     }
   ]);
+
 
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
   const [sortOrder, setSortOrder] = useState('newest');
+
+
+  // Code for getting library from backend
+  const getLibraryItems = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        'http://localhost:8080/api/image/get-library',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return await response.data;
+    } catch (error) {
+      console.error('Error fetching library items:', error);
+      return [];
+    }
+  }
+  if (!hasFetchedLibrary) {
+    setHasFetchedLibrary(true); // Set the flag to true after fetching
+  
+    getLibraryItems().then((library) => {
+      console.log(library);
+      const libraryItems = library.map((item, index) => {
+        let newItem = {
+          id: "img-" + index,
+          title: item.bookTitle,
+          preview: "null",
+          image: item.data,
+          text: item.description,
+          style: item.style,
+          createdAt: item.createdAt,
+          collection: item.collection == "Uncategorized" ? null : item.collection,
+          obj_id: item._id,
+        };
+        return newItem;
+      });
+      console.log("state gonna change");
+      setLibraryItems(libraryItems);
+    });
+  }
 
   // Filter and sort library items
   const filteredItems = libraryItems.filter(item => {
@@ -95,9 +161,31 @@ const Library = () => {
     
     if (window.confirm(`Are you sure you want to delete ${selectedItems.length} item(s)?`)) {
       setLibraryItems(libraryItems.filter(item => !selectedItems.includes(item.id)));
+      selectedItems.forEach(itemId => {
+        const itemToDelete = libraryItems.find(item => item.id === itemId);
+        handleBackendDelete(itemToDelete.obj_id);
+      });
       setSelectedItems([]);
     }
   };
+
+  const handleBackendDelete = async (obj_id) => {
+    console.log("Item to delete on backend: ", obj_id);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'http://localhost:8080/api/image/delete-image',
+        { imageId: obj_id },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    } catch (error) {
+      console.error('Error deleting item from backend:', error);
+    }
+  }
 
   const handleCreateCollection = () => {
     if (selectedItems.length === 0) {
@@ -107,6 +195,16 @@ const Library = () => {
     
     const collectionName = prompt('Enter a name for your new collection:');
     if (collectionName) {
+      selectedItems.forEach(itemId => {
+        let itemToUpdate = libraryItems.find(item => item.id === itemId);
+        if (itemToUpdate) {
+          handleBackendUpdateCollection(itemToUpdate.obj_id, collectionName);
+        }
+      });
+
+      if (collectionName === 'Uncategorized') {
+        collectionName = null; // Set to null if 'Uncategorized' is selected
+      }
       const updatedItems = libraryItems.map(item => {
         if (selectedItems.includes(item.id)) {
           return { ...item, collection: collectionName };
@@ -119,10 +217,50 @@ const Library = () => {
     }
   };
 
+  const handleBackendUpdateCollection = async (obj_id, collection) => {
+    if (collection && obj_id) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(
+          'http://localhost:8080/api/image/update-collection',
+          { imageId: obj_id, collection: collection },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      } catch (error) {
+        console.error('Error updating book title:', error);
+      }
+    }
+  };
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   };
+
+  const handleEdit = async (obj_id) => {
+    // This function will handle the edit action for an item, letting user change the book title
+    const newTitle = prompt('Enter new title:');
+    if (newTitle) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(
+          'http://localhost:8080/api/image/update-book-title',
+          { imageId: obj_id, bookTitle: newTitle },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setLibraryItems(libraryItems.map(item => item.obj_id === obj_id ? { ...item, title: newTitle } : item));
+      } catch (error) {
+        console.error('Error updating book title:', error);
+      }
+    }
+  }
 
   return (
     <div className="library-container">
@@ -275,7 +413,12 @@ const Library = () => {
                 </div>
                 
                 <div className="item-preview">
-                  <span className="preview-icon">{item.preview}</span>
+                  {item.image !== "null" && (
+                    <img width="40px" src={item.image} alt={item.title} className="preview-image" />
+                  )}
+                  {item.preview !== "null" && (
+                    <span className="preview-icon">{item.preview}</span>
+                  )}
                 </div>
                 
                 <div className="item-details">
@@ -297,12 +440,13 @@ const Library = () => {
                 
                 <div className="item-actions">
                   <button className="item-action-button">View</button>
-                  <button className="item-action-button">Edit</button>
+                  <button className="item-action-button" onClick={() => {handleEdit(item.obj_id)}}>Edit</button>
                   <button 
                     className="item-action-button danger"
                     onClick={() => {
                       if (window.confirm('Are you sure you want to delete this item?')) {
                         setLibraryItems(libraryItems.filter(i => i.id !== item.id));
+                        handleBackendDelete(item.obj_id);
                       }
                     }}
                   >
