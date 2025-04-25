@@ -225,7 +225,7 @@ console.log("Token first 20 chars:", token ? token.substring(0, 20) + "..." : "n
       return;
     }
     
-    const collectionName = prompt('Enter a name for your new collection:');
+    let collectionName = prompt('Enter a name for your new collection:');
     if (collectionName) {
       selectedItems.forEach(itemId => {
         let itemToUpdate = libraryItems.find(item => item.id === itemId);

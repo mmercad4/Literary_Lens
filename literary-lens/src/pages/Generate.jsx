@@ -37,8 +37,6 @@ const Generate = () => {
     try {
       // Get the token from local storage
       const token = localStorage.getItem('token');
-      
-      // Call the API endpoint to generate the image
       const response = await axios.post(
         'http://localhost:8080/api/image/generate',
         {

@@ -89,4 +89,89 @@ router.post('/register', async (req, res) => {
   }
 });
 
+router.post("/get-saved-images", async (req, res) => {
+    console.log("User saved images route hit!");
+    try {
+        const userId = req.body.userId; // Extract user ID from request body
+
+        if (!userId) {
+            return res.status(400).json({ message: 'No user ID provided.' });
+        }
+
+        // Fetch the user's saved images
+        const user = await User.findById(userId).populate('savedImages');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        
+        res.status(200).json(user.savedImages);
+
+    } catch (error) {
+        console.error('Error fetching saved images:', error);
+        res.status(500).json({ message: 'Failed to fetch saved images' });
+    }
+});
+
+router.post("/save-image", async (req, res) => {
+    console.log("User save image route hit!");
+    try {
+        const userId = req.body.userId; // Extract user ID from request body
+        const { imageId } = req.body; // Extract user ID and image ID from request body
+
+        if (!userId || !imageId) {
+            return res.status(400).json({ message: 'No user ID or image ID provided.' });
+        }
+
+        // Add the image to the user's saved images
+        const user = await User.findByIdAndUpdate(
+          userId,
+          { $addToSet: { savedImages: imageId } }, // Use $addToSet to avoid duplicates
+          { new: true } // Return the updated document
+        ); // Save the updated user document
+
+        if (!user) {
+          return res.status(404).json({ message: 'User not found.' });
+        }
+
+        res.status(200).json({ message: 'Image saved successfully' });
+
+    } catch (error) {
+        console.error('Error saving image:', error);
+        res.status(500).json({ message: 'Failed to save image' });
+    }
+});
+
+router.post("/unsave-image", async (req, res) => {
+    console.log("User unsave image route hit!");
+    try {
+        const userId = req.body.userId; // Extract user ID from request body
+        if (!userId) {
+            return res.status(400).json({ message: 'No user ID provided.' });
+        }
+        const { imageId } = req.body; // Extract user ID and image ID from request body
+
+        if (!userId || !imageId) {
+            return res.status(400).json({ message: 'No user ID or image ID provided.' });
+        }
+
+        // Remove the image from the user's saved images
+        const user = await User.findByIdAndUpdate(
+          userId,
+          { $pull: { savedImages: imageId } },
+          { new: true } // Return the updated document
+        ); // Save the updated user document
+
+        if (!user) {
+          return res.status(404).json({ message: 'User not found.' });
+        }
+
+        res.status(200).json({ message: 'Image unsaved successfully' });
+
+    } catch (error) {
+        console.error('Error unsaving image:', error);
+        res.status(500).json({ message: 'Failed to unsave image' });
+    }
+});
+
 module.exports = router;

@@ -1,12 +1,10 @@
 const express = require('express');
-const Image = require('../models/image'); // Import the Image model
+const Image = require('../models/image');
 const router = express.Router();
 const authenticate = require('../middleware/auth.js');
 const { generateImage } = require('../controllers/imageController');
 require('dotenv').config();
 
-// Generate image with Gemini API
-// Generate image with Gemini API
 router.post('/generate', authenticate, async (req, res) => {
     console.log("Image generation route hit!");
     
@@ -17,7 +15,6 @@ router.post('/generate', authenticate, async (req, res) => {
             return res.status(400).json({ message: 'No prompt provided.' });
         }
         
-        // Call the image generation function
         const result = await generateImage(prompt);
         
         if (!result.success) {
@@ -27,7 +24,7 @@ router.post('/generate', authenticate, async (req, res) => {
         // Return only the image data without saving to database
         res.status(200).json({ 
             message: 'Image generated successfully',
-            imageData: result.imageData // Send the base64 data directly
+            imageData: result.imageData
         });
         
     } catch (error) {
@@ -53,11 +50,11 @@ router.post('/save', authenticate, async (req, res) => {
             return res.status(400).json({ message: 'No image data provided.' });
         }
         
-        // Extract base64 data if it includes the data URL prefix
+        
         let imageData = image;
         if (typeof image === 'string' && image.startsWith('data:image')) {
             console.log("- Extracting base64 from data URL");
-            imageData = image.split(',')[1]; // Extract just the base64 part
+            imageData = image.split(',')[1];
         }
         
         console.log("- Processed image data length:", imageData.length);
@@ -127,7 +124,7 @@ router.post("/update-book-title", authenticate, async (req, res) => {
         const updatedImage = await Image.findByIdAndUpdate(
             imageId, 
             { bookTitle: bookTitle },
-            { new: true } // Return the updated document
+            { new: true }
         );
 
         if (!updatedImage) {
@@ -147,7 +144,7 @@ router.post("/update-book-title", authenticate, async (req, res) => {
 router.post("/delete-image", authenticate, async (req, res) => {
     console.log("Image delete route hit!");
     try {
-        const { imageId } = req.body; // Extract image ID from request body
+        const { imageId } = req.body;
 
         if (!imageId) {
             return res.status(400).json({ message: 'No image ID provided.' });
