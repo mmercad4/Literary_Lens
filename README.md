@@ -5,3 +5,4 @@ Once cloned navigate to the base, Backend, and literary-lens directoryies and ru
 <br />
 You can edit environment variables like the locations of the mongodb database in the ".env" file.<br />
 Now run "npm start" in both the Backend and literary-lens directories to begin the server.<br />
+Your server is now running and you can go to localhost at port 3000 to access the project
