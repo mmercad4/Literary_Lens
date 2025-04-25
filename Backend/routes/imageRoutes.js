@@ -1,50 +1,146 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const Image = require('../models/image'); // Import the Image model
 const router = express.Router();
 const authenticate = require('../middleware/auth.js');
+const { generateImage } = require('../controllers/imageController');
+require('dotenv').config();
 
-// Post route for image saving
+// Generate image with Gemini API
+// Generate image with Gemini API
+router.post('/generate', authenticate, async (req, res) => {
+    console.log("Image generation route hit!");
+    
+    try {
+        const { prompt, bookTitle, style } = req.body;
+        
+        if (!prompt) {
+            return res.status(400).json({ message: 'No prompt provided.' });
+        }
+        
+        // Call the image generation function
+        const result = await generateImage(prompt);
+        
+        if (!result.success) {
+            return res.status(500).json({ message: result.error || 'Failed to generate image' });
+        }
+        
+        // Return only the image data without saving to database
+        res.status(200).json({ 
+            message: 'Image generated successfully',
+            imageData: result.imageData // Send the base64 data directly
+        });
+        
+    } catch (error) {
+        console.error('Error generating image:', error);
+        res.status(500).json({ message: 'Failed to generate image' });
+    }
+});
+
 router.post('/save', authenticate, async (req, res) => {
     console.log("Image save route hit!");
 
     try {
-        const { image, description, bookTitle, style} = req.body; // Extract data from request body
+        const { image, description, bookTitle, style } = req.body;
+        
+        console.log("Request received with data:");
+        console.log("- Description length:", description ? description.length : 0);
+        console.log("- Image data present:", !!image);
+        if (image) {
+            console.log("- Image data length:", image.length);
+        }
 
         if (!image) {
             return res.status(400).json({ message: 'No image data provided.' });
         }
+        
+        // Extract base64 data if it includes the data URL prefix
+        let imageData = image;
+        if (typeof image === 'string' && image.startsWith('data:image')) {
+            console.log("- Extracting base64 from data URL");
+            imageData = image.split(',')[1]; // Extract just the base64 part
+        }
+        
+        console.log("- Processed image data length:", imageData.length);
+        
         // Create a new image instance
         const newImage = new Image({
-            data: image,
+            data: imageData,
             url: "none",
-            description: description,
-            bookTitle: bookTitle,
-            generatedBy: req.user.userId, // Use the user ID from the authenticated user
+            description: description || "AI Generated Image",
+            bookTitle: bookTitle || "Untitled",
+            generatedBy: req.user.userId,
             collection: "Uncategorized",
-            style: style,
+            style: style || "Default",
         });
     
+        console.log("- Saving image to database...");
+        
         // Save the image to the database
         await newImage.save();
+        
+        console.log("- Image saved successfully!");
     
-        res.status(201).json({ message: 'Image saved successfully', image: newImage });
+        res.status(201).json({ 
+            message: 'Image saved successfully', 
+            imageId: newImage._id
+        });
     } catch (error) {
         console.error('Error saving image:', error);
-        res.status(500).json({ message: 'Failed to save image' });
+        
+        // Check for MongoDB document size limit error (16MB)
+        if (error.message && error.message.includes('document size')) {
+            return res.status(413).json({ 
+                message: 'Image is too large for database storage. Please try a smaller image.',
+                details: error.message
+            });
+        }
+        
+        res.status(500).json({ 
+            message: 'Failed to save image',
+            details: error.message 
+        });
     }
-
 });
 
 router.post("/get-library", authenticate, async (req, res) => {
     console.log("Image library route hit!");
     try {
         const images = await Image.find({ generatedBy: req.user.userId });
+        console.log(`Found ${images.length} images for user ${req.user.userId}`);
         res.status(200).json(images);
     } catch (error) {
         console.error('Error fetching images:', error);
         res.status(500).json({ message: 'Failed to fetch images' });
+    }
+});
+
+router.post("/update-book-title", authenticate, async (req, res) => {
+    console.log("Image title update route hit!");
+    try {
+        const { imageId, bookTitle } = req.body;
+
+        if (!imageId || !bookTitle) {
+            return res.status(400).json({ message: 'No image ID or title provided.' });
+        }
+
+        // Update the image's title in the database
+        const updatedImage = await Image.findByIdAndUpdate(
+            imageId, 
+            { bookTitle: bookTitle },
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedImage) {
+            return res.status(404).json({ message: 'Image not found' });
+        }
+
+        res.status(200).json({ 
+            message: 'Image title updated successfully',
+            image: updatedImage
+        });
+    } catch (error) {
+        console.error('Error updating image title:', error);
+        res.status(500).json({ message: 'Failed to update image title' });
     }
 });
 
@@ -57,52 +153,22 @@ router.post("/delete-image", authenticate, async (req, res) => {
             return res.status(400).json({ message: 'No image ID provided.' });
         }
 
-        // Delete the image from the database
-        await Image.findByIdAndDelete(imageId);
+        console.log(`Attempting to delete image with ID: ${imageId}`);
 
+        // Find and delete the image from the database
+        const deletedImage = await Image.findByIdAndDelete(imageId);
+        
+        if (!deletedImage) {
+            console.log(`Image with ID ${imageId} not found`);
+            return res.status(404).json({ message: 'Image not found' });
+        }
+
+        console.log(`Successfully deleted image with ID: ${imageId}`);
         res.status(200).json({ message: 'Image deleted successfully' });
     } catch (error) {
         console.error('Error deleting image:', error);
         res.status(500).json({ message: 'Failed to delete image' });
     }
 });
-
-router.post("/update-collection", authenticate, async (req, res) => {
-    console.log("Image collection update route hit!");
-    try {
-        const { imageId, collection } = req.body; // Extract image ID and collection from request body
-        if (!imageId || !collection) {
-            return res.status(400).json({ message: 'No image ID or collection provided.' });
-        }
-
-        // Update the image's collection in the database
-        await Image.findByIdAndUpdate(imageId, { collection: collection });
-
-        res.status(200).json({ message: 'Image collection updated successfully' });
-    } catch (error) {
-        console.error('Error updating image collection:', error);
-        res.status(500).json({ message: 'Failed to update image collection' });
-    }
-});
-
-router.post("/update-book-title", authenticate, async (req, res) => {
-    console.log("Image book title update route hit!");
-    try {
-        const { imageId, bookTitle } = req.body; // Extract image ID and book title from request body
-
-        if (!imageId || !bookTitle) {
-            return res.status(400).json({ message: 'No image ID or book title provided.' });
-        }
-
-        // Update the image's book title in the database
-        await Image.findByIdAndUpdate(imageId, { bookTitle: bookTitle });
-
-        res.status(200).json({ message: 'Image book title updated successfully' });
-    } catch (error) {
-        console.error('Error updating image book title:', error);
-        res.status(500).json({ message: 'Failed to update image book title' });
-    }
-});
-
 
 module.exports = router;

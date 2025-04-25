@@ -1,4 +1,3 @@
-// literary-lens/src/pages/Generate.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -10,6 +9,9 @@ const Generate = () => {
   const [imageStyle, setImageStyle] = useState('realistic');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState(null);
+  const [error, setError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [bookTitle, setBookTitle] = useState('');
 
   const handleStyleChange = (e) => {
     setImageStyle(e.target.value);
@@ -19,50 +21,29 @@ const Generate = () => {
     setTextInput(e.target.value);
   };
 
-  const handleGenerate = () => {
+  const handleTitleChange = (e) => {
+    setBookTitle(e.target.value);
+  };
+
+  const handleGenerate = async () => {
     if (!textInput.trim()) {
       alert('Please enter some text to visualize.');
       return;
     }
 
     setIsGenerating(true);
+    setError('');
 
-    // Mock image generation
-    setTimeout(() => {
-      setGeneratedImage({
-        id: 'img-' + Date.now(),
-        url: 'placeholder',
-        text: textInput,
-        style: imageStyle,
-        createdAt: new Date().toISOString()
-      });
-      setIsGenerating(false);
-    }, 2000);
-  };
-
-  const handleSave = async () => {
     try {
-      const imageElement = document.getElementById('image-save');
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = imageElement.width;
-      canvas.height = imageElement.height;
-      ctx.drawImage(imageElement, 0, 0);
-      const dataURL = canvas.toDataURL('image/png');
-
       // Get the token from local storage
       const token = localStorage.getItem('token');
-      let imageStyle
-
-      // Example: axios.post('/api/save-image', { image: dataURL })
-      // Make the API call to login endpoint
+      
+      // Call the API endpoint to generate the image
       const response = await axios.post(
-        'http://localhost:8080/api/image/save',
+        'http://localhost:8080/api/image/generate',
         {
-          image: dataURL,
-          description: generatedImage.text,
-          bookTitle: "0",
-          style: generatedImage.style,
+          prompt: textInput,
+          style: imageStyle
         },
         {
           headers: {
@@ -70,13 +51,131 @@ const Generate = () => {
           },
         }
       );
+      
+      // Set the generated image data
+      setGeneratedImage({
+        id: 'img-' + Date.now(),
+        data: response.data.imageData || response.data.image.data,
+        text: textInput,
+        style: imageStyle,
+        createdAt: new Date().toISOString()
+      });
+      
+      // Suggest a title based on the first few words of the text input
+      const suggestedTitle = textInput.split(' ').slice(0, 3).join(' ') + '...';
+      setBookTitle(suggestedTitle);
+    } catch (err) {
+      console.error('Error generating image:', err);
+      setError(err.response?.data?.message || 'Failed to generate image. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // resize the image
+  const resizeImageBeforeSaving = (base64Data) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        
+        let width = img.width;
+        let height = img.height;
+        
+        // Calculate new dimensions while maintaining aspect ratio
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw the resized image
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Get the base64 data (use JPEG with 0.8 quality for better compression)
+        const resizedBase64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+        resolve(resizedBase64);
+      };
+      
+      // Set the source of the image
+      img.src = `data:image/png;base64,${base64Data}`;
+    });
+  };
+
+  const handleSave = async () => {
+    if (!bookTitle.trim()) {
+      alert('Please enter a title for your visualization.');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      // Get the token from local storage
+      const token = localStorage.getItem('token');
+      
+      // image size debugging
+      console.log("Original image data size:", generatedImage.data.length);
+      const resizedImageData = await resizeImageBeforeSaving(generatedImage.data);
+      console.log("Resized image data size:", resizedImageData.length);
+      
+      const response = await axios.post(
+        'http://localhost:8080/api/image/save',
+        {
+          image: `data:image/jpeg;base64,${resizedImageData}`,
+          description: generatedImage.text,
+          bookTitle: bookTitle,
+          style: generatedImage.style,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+          timeout: 60000
+        }
+      );
+      
       console.log(response.data);
+      alert('Image saved to your library!');
+      
+      localStorage.setItem('refreshLibrary', 'true');
+      navigate('/library');
     } catch (error) {
       console.error('Error saving image:', error);
+      
+      if (error.response) {
+        console.error("Response error:", error.response.status, error.response.data);
+        
+        if (error.response.status === 401) {
+          alert('Your session has expired. Please log in again.');
+          localStorage.removeItem('token');
+          navigate('/login');
+          return;
+        }
+      } else if (error.request) {
+        console.error("Request error:", error.request);
+      } else {
+        console.error("Error message:", error.message);
+      }
+      
       alert('Failed to save image. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
-    alert('Image saved to your library!');
-    navigate('/library');
   };
 
   return (
@@ -138,59 +237,6 @@ const Generate = () => {
               rows={10}
             ></textarea>
 
-            <div className="style-selection">
-              <h2>Select Style</h2>
-              <div className="style-options">
-                <label className={`style-option ${imageStyle === 'realistic' ? 'selected' : ''}`}>
-                  <input 
-                    type="radio" 
-                    name="style" 
-                    value="realistic" 
-                    checked={imageStyle === 'realistic'} 
-                    onChange={handleStyleChange}
-                  />
-                  <span className="style-name">Realistic</span>
-                  <div className="style-preview">🖼️</div>
-                </label>
-
-                <label className={`style-option ${imageStyle === 'watercolor' ? 'selected' : ''}`}>
-                  <input 
-                    type="radio" 
-                    name="style" 
-                    value="watercolor" 
-                    checked={imageStyle === 'watercolor'} 
-                    onChange={handleStyleChange}
-                  />
-                  <span className="style-name">Watercolor</span>
-                  <div className="style-preview">🎨</div>
-                </label>
-
-                <label className={`style-option ${imageStyle === 'sketch' ? 'selected' : ''}`}>
-                  <input 
-                    type="radio" 
-                    name="style" 
-                    value="sketch" 
-                    checked={imageStyle === 'sketch'} 
-                    onChange={handleStyleChange}
-                  />
-                  <span className="style-name">Sketch</span>
-                  <div className="style-preview">✏️</div>
-                </label>
-
-                <label className={`style-option ${imageStyle === 'fantasy' ? 'selected' : ''}`}>
-                  <input 
-                    type="radio" 
-                    name="style" 
-                    value="fantasy" 
-                    checked={imageStyle === 'fantasy'} 
-                    onChange={handleStyleChange}
-                  />
-                  <span className="style-name">Fantasy</span>
-                  <div className="style-preview">🧙</div>
-                </label>
-              </div>
-            </div>
-
             <button 
               className="generate-button"
               onClick={handleGenerate}
@@ -212,14 +258,44 @@ const Generate = () => {
               ) : generatedImage ? (
                 <div className="generated-result">
                   <div className="image-container">
-                    <div className="placeholder-image">
-                      <span className="placeholder-icon">🖼️</span>
-                      <span className="placeholder-text">Generated Image</span>
-                      <img src="./logo192.png" id="image-save" alt="placeholder"></img>
-                    </div>
+                    {}
+                    <img 
+                      src={`data:image/png;base64,${generatedImage.data}`}
+                      id="image-save" 
+                      alt="Generated book cover visualization"
+                      style={{ maxWidth: '100%', maxHeight: '100%' }}
+                    />
                   </div>
+                  
+                  {}
+                  <div className="title-input-container" style={{ marginTop: '15px', marginBottom: '15px' }}>
+                    <label htmlFor="book-title" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                      Visualization Title:
+                    </label>
+                    <input
+                      type="text"
+                      id="book-title"
+                      value={bookTitle}
+                      onChange={handleTitleChange}
+                      placeholder="Enter a title for your visualization"
+                      style={{ 
+                        width: '100%', 
+                        padding: '8px', 
+                        borderRadius: '4px',
+                        border: '1px solid #ccc',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+                  
                   <div className="image-actions">
-                    <button className="action-button" onClick={handleSave}>Save to Library</button>
+                    <button 
+                      className="action-button" 
+                      onClick={handleSave}
+                      disabled={isSaving || !bookTitle.trim()}
+                    >
+                      {isSaving ? 'Saving...' : 'Save to Library'}
+                    </button>
                     <button className="action-button secondary">Download</button>
                     <button className="action-button secondary">Share</button>
                   </div>
@@ -231,6 +307,8 @@ const Generate = () => {
                   <p className="empty-subtext">Enter text and click "Generate Image" to create a visualization</p>
                 </div>
               )}
+              
+              {error && <div className="error-message">{error}</div>}
             </div>
           </div>
         </div>
